@@ -45,7 +45,7 @@
     "jsdom": "29.0.1",
     "ng-packagr": "21.2.1",
     "prettier": "2.8.8",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
     "vitest": "4.1.2"
   }
 }
