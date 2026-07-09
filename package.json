@@ -41,11 +41,11 @@
     "@angular/cli": "22.0.1",
     "@angular/compiler-cli": "22.0.1",
     "@types/node": "24.12.4",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.10",
     "jsdom": "29.1.1",
     "ng-packagr": "22.0.0",
     "prettier": "3.8.4",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.10"
   }
 }
