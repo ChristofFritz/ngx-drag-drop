@@ -40,7 +40,7 @@
     "@angular/build": "22.0.1",
     "@angular/cli": "22.0.1",
     "@angular/compiler-cli": "22.0.1",
-    "@types/node": "24.12.4",
+    "@types/node": "24.13.3",
     "@vitest/coverage-v8": "4.1.8",
     "jsdom": "29.1.1",
     "ng-packagr": "22.0.0",
