@@ -17,7 +17,7 @@
     "prettier": "pnpm exec prettier --write ."
   },
   "private": true,
-  "packageManager": "pnpm@11.6.0",
+  "packageManager": "pnpm@11.20.0",
   "dependencies": {
     "@angular/animations": "^22.0.0",
     "@angular/cdk": "^22.0.0",
