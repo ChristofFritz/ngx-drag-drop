@@ -26,12 +26,16 @@ import {
 } from './dnd-utils';
 
 @Directive({ selector: '[dndDragImageRef]', standalone: true })
-export class DndDragImageRefDirective implements OnInit {
+export class DndDragImageRefDirective implements OnInit, OnDestroy {
   dndDraggableDirective = inject(forwardRef(() => DndDraggableDirective));
   elementRef: ElementRef<HTMLElement> = inject(ElementRef);
 
   ngOnInit() {
     this.dndDraggableDirective.registerDragImage(this.elementRef);
+  }
+
+  ngOnDestroy(): void {
+    this.dndDraggableDirective.unregisterDragImage(this.elementRef);
   }
 }
 
@@ -231,6 +235,12 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
 
   registerDragImage(elementRef: ElementRef | undefined) {
     this.dndDragImageElementRef = elementRef;
+  }
+
+  unregisterDragImage(elementRef: ElementRef) {
+    if (this.dndDragImageElementRef === elementRef) {
+      this.dndDragImageElementRef = undefined;
+    }
   }
 
   private readonly dragEventHandler: (event: DragEvent) => void = (
