@@ -19,8 +19,24 @@ export const DROP_EFFECTS = ['move', 'copy', 'link'] as DropEffect[];
 
 export const CUSTOM_MIME_TYPE = 'application/x-dnd';
 
-function mimeTypeIsCustom(mimeType: string) {
-  return mimeType.substring(0, CUSTOM_MIME_TYPE.length) === CUSTOM_MIME_TYPE;
+function mimeTypeIsCustom(mimeType: string): boolean {
+  return (
+    mimeType === CUSTOM_MIME_TYPE || mimeType.startsWith(`${CUSTOM_MIME_TYPE}-`)
+  );
+}
+
+function parseDragDropData(event: DragEvent, mimeType: string): DragDropData {
+  try {
+    const data: unknown = JSON.parse(
+      event.dataTransfer?.getData(mimeType) ?? '{}'
+    );
+
+    return typeof data === 'object' && data !== null && !Array.isArray(data)
+      ? (data as DragDropData)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 export function getWellKnownMimeType(event: DragEvent): string | null {
@@ -57,14 +73,14 @@ export function getDropData(
 
   if (dragIsExternal === true) {
     if (mimeType !== null && mimeTypeIsCustom(mimeType)) {
-      return JSON.parse(event.dataTransfer?.getData(mimeType) ?? '{}');
+      return parseDragDropData(event, mimeType);
     }
 
     return {};
   }
 
   if (mimeType !== null) {
-    return JSON.parse(event.dataTransfer?.getData(mimeType) ?? '{}');
+    return parseDragDropData(event, mimeType);
   }
 
   return {};
@@ -111,7 +127,16 @@ export function shouldPositionPlaceholderBeforeElement(
   // If the pointer is in the upper half of the list item element,
   // we position the placeholder before the list item, otherwise after it.
   if (horizontal) {
-    return event.clientX < bounds.left + bounds.width / 2;
+    const midpoint = bounds.left + bounds.width / 2;
+    const layoutElement = element.parentElement ?? element;
+    const direction =
+      layoutElement.ownerDocument.defaultView?.getComputedStyle(
+        layoutElement
+      ).direction;
+
+    return direction === 'rtl'
+      ? event.clientX > midpoint
+      : event.clientX < midpoint;
   }
 
   return event.clientY < bounds.top + bounds.height / 2;
