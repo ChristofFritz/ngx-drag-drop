@@ -252,6 +252,25 @@ describe('shouldPositionPlaceholderBeforeElement', () => {
       false
     );
   });
+
+  it('should use the parent layout direction for horizontal positioning', () => {
+    const parent = document.createElement('div');
+    parent.style.direction = 'rtl';
+    const element = document.createElement('div');
+    element.style.direction = 'ltr';
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 180, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      true
+    );
+  });
 });
 
 describe('calculateDragImageOffset', () => {
