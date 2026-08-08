@@ -91,6 +91,14 @@ describe('getWellKnownMimeType', () => {
     } as unknown as DragEvent;
     expect(getWellKnownMimeType(event)).toBeNull();
   });
+
+  it('should reject MIME types that only share the custom prefix', () => {
+    const event = {
+      dataTransfer: { types: [CUSTOM_MIME_TYPE + 'malicious'] },
+    } as unknown as DragEvent;
+
+    expect(getWellKnownMimeType(event)).toBeNull();
+  });
 });
 
 describe('setDragData', () => {
@@ -162,6 +170,56 @@ describe('getDropData', () => {
     } as unknown as DragEvent;
 
     expect(getDropData(event, true)).toEqual(payload);
+  });
+
+  it('should ignore malformed custom drag data', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it.each([
+    ['null', 'null'],
+    ['an array', '[]'],
+    ['a primitive', '42'],
+  ])('should ignore custom drag data that is %s', (_description, payload) => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => payload),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it('should ignore malformed custom data from an internal drag', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, false)).toEqual({});
+  });
+
+  it('should ignore custom drag data when reading it fails', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => {
+          throw new Error('DataTransfer read failed');
+        }),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
   });
 });
 
@@ -250,6 +308,115 @@ describe('shouldPositionPlaceholderBeforeElement', () => {
     const event = { clientX: 180, clientY: 0 } as DragEvent;
     expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
       false
+    );
+  });
+
+  it('should use the parent layout direction for horizontal positioning', () => {
+    const parent = document.createElement('div');
+    parent.style.direction = 'rtl';
+    const element = document.createElement('div');
+    element.style.direction = 'ltr';
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 180, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      true
+    );
+  });
+
+  it('should position after the child in the left half of an RTL layout', () => {
+    const parent = document.createElement('div');
+    parent.style.direction = 'rtl';
+    const element = document.createElement('div');
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 120, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      false
+    );
+  });
+
+  it('should ignore an RTL child inside an LTR parent layout', () => {
+    const parent = document.createElement('div');
+    parent.style.direction = 'ltr';
+    const element = document.createElement('div');
+    element.style.direction = 'rtl';
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 120, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      true
+    );
+  });
+
+  it('should use the right-half behavior of an explicit LTR parent', () => {
+    const parent = document.createElement('div');
+    parent.style.direction = 'ltr';
+    const element = document.createElement('div');
+    element.style.direction = 'rtl';
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 180, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      false
+    );
+  });
+
+  it('should use an explicit RTL direction on a parentless element', () => {
+    const element = document.createElement('div');
+    element.style.direction = 'rtl';
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 180, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      true
+    );
+  });
+
+  it('should fall back to LTR when the owner document has no window', () => {
+    const detachedDocument = document.implementation.createHTMLDocument();
+    const parent = detachedDocument.createElement('div');
+    const element = detachedDocument.createElement('div');
+    parent.appendChild(element);
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+      top: 0,
+      height: 50,
+      left: 100,
+      width: 100,
+    } as DOMRect);
+
+    const event = { clientX: 120, clientY: 0 } as DragEvent;
+    expect(shouldPositionPlaceholderBeforeElement(event, element, true)).toBe(
+      true
     );
   });
 });
