@@ -183,11 +183,39 @@ describe('getDropData', () => {
     expect(getDropData(event, true)).toEqual({});
   });
 
-  it('should ignore custom drag data that is not an object', () => {
+  it.each([
+    ['null', 'null'],
+    ['an array', '[]'],
+    ['a primitive', '42'],
+  ])('should ignore custom drag data that is %s', (_description, payload) => {
     const event = {
       dataTransfer: {
         types: [CUSTOM_MIME_TYPE],
-        getData: vi.fn(() => 'null'),
+        getData: vi.fn(() => payload),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it('should ignore malformed custom data from an internal drag', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, false)).toEqual({});
+  });
+
+  it('should ignore custom drag data when reading it fails', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => {
+          throw new Error('DataTransfer read failed');
+        }),
       },
     } as unknown as DragEvent;
 
