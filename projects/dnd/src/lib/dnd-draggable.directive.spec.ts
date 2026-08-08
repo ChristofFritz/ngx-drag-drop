@@ -1,13 +1,24 @@
 import { Component, DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   DndDraggableDirective,
   DndDragImageRefDirective,
 } from './dnd-draggable.directive';
 import { DndHandleDirective } from './dnd-handle.directive';
 import { endDrag, dndState } from './dnd-state';
+
+function createMockDragEvent(): DragEvent {
+  return {
+    dataTransfer: {
+      types: [],
+      effectAllowed: 'all',
+      setData: vi.fn(),
+    },
+    stopPropagation: vi.fn(),
+  } as unknown as DragEvent;
+}
 
 @Component({
   standalone: true,
@@ -74,6 +85,28 @@ describe('DndDraggableDirective', () => {
     const directive = draggableEl.injector.get(DndDraggableDirective);
     expect(directive).toBeTruthy();
     expect(directive.dndEffectAllowed).toBe('copyMove');
+  });
+
+  it('should clean up an active drag when disabled before dragend', () => {
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    directive.onDragStart(createMockDragEvent());
+    expect(dndState.isDragging).toBe(true);
+
+    directive.dndDisableIf = true;
+    directive.onDragEnd(createMockDragEvent());
+
+    expect(dndState.isDragging).toBe(false);
+  });
+
+  it('should clean up drag state when drag data cannot be serialized', () => {
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const circularData: { self?: unknown } = {};
+    circularData.self = circularData;
+    directive.dndDraggable = circularData;
+
+    expect(() => directive.onDragStart(createMockDragEvent())).toThrow();
+    expect(dndState.isDragging).toBe(false);
+    expect((directive as any).isDragStarted).toBe(false);
   });
 });
 
