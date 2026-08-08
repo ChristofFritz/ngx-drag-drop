@@ -91,6 +91,14 @@ describe('getWellKnownMimeType', () => {
     } as unknown as DragEvent;
     expect(getWellKnownMimeType(event)).toBeNull();
   });
+
+  it('should reject MIME types that only share the custom prefix', () => {
+    const event = {
+      dataTransfer: { types: [CUSTOM_MIME_TYPE + 'malicious'] },
+    } as unknown as DragEvent;
+
+    expect(getWellKnownMimeType(event)).toBeNull();
+  });
 });
 
 describe('setDragData', () => {
@@ -162,6 +170,56 @@ describe('getDropData', () => {
     } as unknown as DragEvent;
 
     expect(getDropData(event, true)).toEqual(payload);
+  });
+
+  it('should ignore malformed custom drag data', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it.each([
+    ['null', 'null'],
+    ['an array', '[]'],
+    ['a primitive', '42'],
+  ])('should ignore custom drag data that is %s', (_description, payload) => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => payload),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it('should ignore malformed custom data from an internal drag', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, false)).toEqual({});
+  });
+
+  it('should ignore custom drag data when reading it fails', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => {
+          throw new Error('DataTransfer read failed');
+        }),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
   });
 });
 

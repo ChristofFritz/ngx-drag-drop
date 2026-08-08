@@ -19,8 +19,24 @@ export const DROP_EFFECTS = ['move', 'copy', 'link'] as DropEffect[];
 
 export const CUSTOM_MIME_TYPE = 'application/x-dnd';
 
-function mimeTypeIsCustom(mimeType: string) {
-  return mimeType.substring(0, CUSTOM_MIME_TYPE.length) === CUSTOM_MIME_TYPE;
+function mimeTypeIsCustom(mimeType: string): boolean {
+  return (
+    mimeType === CUSTOM_MIME_TYPE || mimeType.startsWith(`${CUSTOM_MIME_TYPE}-`)
+  );
+}
+
+function parseDragDropData(event: DragEvent, mimeType: string): DragDropData {
+  try {
+    const data: unknown = JSON.parse(
+      event.dataTransfer?.getData(mimeType) ?? '{}'
+    );
+
+    return typeof data === 'object' && data !== null && !Array.isArray(data)
+      ? (data as DragDropData)
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 export function getWellKnownMimeType(event: DragEvent): string | null {
@@ -57,14 +73,14 @@ export function getDropData(
 
   if (dragIsExternal === true) {
     if (mimeType !== null && mimeTypeIsCustom(mimeType)) {
-      return JSON.parse(event.dataTransfer?.getData(mimeType) ?? '{}');
+      return parseDragDropData(event, mimeType);
     }
 
     return {};
   }
 
   if (mimeType !== null) {
-    return JSON.parse(event.dataTransfer?.getData(mimeType) ?? '{}');
+    return parseDragDropData(event, mimeType);
   }
 
   return {};
