@@ -131,11 +131,17 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
 
     this.isDragStarted = true;
 
-    setDragData(
-      event,
-      { data: this.dndDraggable, type: this.dndType },
-      dndState.effectAllowed!
-    );
+    try {
+      setDragData(
+        event,
+        { data: this.dndDraggable, type: this.dndType },
+        dndState.effectAllowed!
+      );
+    } catch (error) {
+      endDrag();
+      this.isDragStarted = false;
+      throw error;
+    }
 
     this.dragImage = this.determineDragImage();
 
@@ -180,7 +186,7 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('dragend', ['$event']) onDragEnd(event: DragEvent) {
-    if (!this.draggable || !this.isDragStarted) {
+    if (!this.isDragStarted) {
       return;
     }
     // get drop effect from custom stored state as its not reliable across browsers

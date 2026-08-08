@@ -9,6 +9,19 @@ import {
 import { DndHandleDirective } from './dnd-handle.directive';
 import { endDrag, dndState } from './dnd-state';
 
+function createMockDragEvent(
+  setData: (format: string, data: string) => void = vi.fn()
+): DragEvent {
+  return {
+    dataTransfer: {
+      types: [],
+      effectAllowed: 'all',
+      setData,
+    },
+    stopPropagation: vi.fn(),
+  } as unknown as DragEvent;
+}
+
 @Component({
   standalone: true,
   imports: [DndDraggableDirective],
@@ -82,6 +95,95 @@ describe('DndDraggableDirective', () => {
     const directive = draggableEl.injector.get(DndDraggableDirective);
     expect(directive).toBeTruthy();
     expect(directive.dndEffectAllowed).toBe('copyMove');
+  });
+
+  it('should clean up an active drag when disabled before dragend', () => {
+    vi.useFakeTimers();
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const endSpy = vi.spyOn(directive.dndEnd, 'emit');
+    const canceledSpy = vi.spyOn(directive.dndCanceled, 'emit');
+    const startEvent = createMockDragEvent();
+    const endEvent = createMockDragEvent();
+
+    directive.onDragStart(startEvent);
+    expect(dndState.isDragging).toBe(true);
+    expect(draggableEl.nativeElement.classList.contains('dndDragging')).toBe(
+      true
+    );
+    draggableEl.nativeElement.dispatchEvent(new Event('drag'));
+    expect(
+      draggableEl.nativeElement.classList.contains('dndDraggingSource')
+    ).toBe(true);
+
+    directive.dndDisableIf = true;
+    directive.onDragEnd(endEvent);
+
+    expect(dndState.isDragging).toBe(false);
+    expect((directive as any).isDragStarted).toBe(false);
+    expect(endSpy).toHaveBeenCalledOnce();
+    expect(endSpy).toHaveBeenCalledWith(endEvent);
+    expect(canceledSpy).toHaveBeenCalledOnce();
+    expect(canceledSpy).toHaveBeenCalledWith(endEvent);
+    expect(endEvent.stopPropagation).toHaveBeenCalledOnce();
+    expect(draggableEl.nativeElement.classList.contains('dndDragging')).toBe(
+      false
+    );
+    expect(draggableEl.nativeElement.style.pointerEvents).toBe('unset');
+    vi.runAllTimers();
+    expect(
+      draggableEl.nativeElement.classList.contains('dndDraggingSource')
+    ).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('should clean up drag state when drag data cannot be serialized', () => {
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const startSpy = vi.spyOn(directive.dndStart, 'emit');
+    const error = new Error('Serialization failed');
+    const stringifySpy = vi
+      .spyOn(JSON, 'stringify')
+      .mockImplementationOnce(() => {
+        throw error;
+      });
+    const event = createMockDragEvent();
+    let thrown: unknown;
+
+    try {
+      directive.onDragStart(event);
+    } catch (caught) {
+      thrown = caught;
+    } finally {
+      stringifySpy.mockRestore();
+    }
+
+    expect(thrown).toBe(error);
+    expect(dndState.isDragging).toBe(false);
+    expect(dndState.dropEffect).toBeUndefined();
+    expect(dndState.effectAllowed).toBeUndefined();
+    expect(dndState.type).toBeUndefined();
+    expect((directive as any).isDragStarted).toBe(false);
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it('should clean up drag state when DataTransfer rejects the data', () => {
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const startSpy = vi.spyOn(directive.dndStart, 'emit');
+    const error = new Error('DataTransfer rejected the data');
+    const event = createMockDragEvent(
+      vi.fn(() => {
+        throw error;
+      })
+    );
+
+    expect(() => directive.onDragStart(event)).toThrow(error);
+    expect(dndState.isDragging).toBe(false);
+    expect(dndState.dropEffect).toBeUndefined();
+    expect(dndState.effectAllowed).toBeUndefined();
+    expect(dndState.type).toBeUndefined();
+    expect((directive as any).isDragStarted).toBe(false);
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(event.stopPropagation).not.toHaveBeenCalled();
   });
 });
 
