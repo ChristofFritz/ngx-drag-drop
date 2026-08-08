@@ -1,4 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices"]
+  "extends": [
+    "config:best-practices",
+    "schedule:monthly",
+    "group:allNonMajor",
+    "group:angularMonorepo",
+    "group:angular-cliMonorepo",
+    "group:angularmaterialMonorepo",
+    ":prHourlyLimitNone"
+  ],
+  "minimumReleaseAge": "7 days",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["monthly"]
+  },
+  "prConcurrentLimit": 3
 }
