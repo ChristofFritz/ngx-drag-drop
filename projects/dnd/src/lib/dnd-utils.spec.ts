@@ -91,6 +91,14 @@ describe('getWellKnownMimeType', () => {
     } as unknown as DragEvent;
     expect(getWellKnownMimeType(event)).toBeNull();
   });
+
+  it('should reject MIME types that only share the custom prefix', () => {
+    const event = {
+      dataTransfer: { types: [CUSTOM_MIME_TYPE + 'malicious'] },
+    } as unknown as DragEvent;
+
+    expect(getWellKnownMimeType(event)).toBeNull();
+  });
 });
 
 describe('setDragData', () => {
@@ -162,6 +170,28 @@ describe('getDropData', () => {
     } as unknown as DragEvent;
 
     expect(getDropData(event, true)).toEqual(payload);
+  });
+
+  it('should ignore malformed custom drag data', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => '{invalid json'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
+  });
+
+  it('should ignore custom drag data that is not an object', () => {
+    const event = {
+      dataTransfer: {
+        types: [CUSTOM_MIME_TYPE],
+        getData: vi.fn(() => 'null'),
+      },
+    } as unknown as DragEvent;
+
+    expect(getDropData(event, true)).toEqual({});
   });
 });
 
