@@ -1,7 +1,7 @@
 import { Component, DebugElement, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   DndDraggableDirective,
   DndDragImageRefDirective,
@@ -207,5 +207,23 @@ describe('DndDraggableDirective - drag image', () => {
     fixture.detectChanges();
 
     expect((directive as any).dndDragImageElementRef).toBe(secondDragImage);
+
+    const setDragImage = vi.fn();
+    const event = {
+      dataTransfer: {
+        types: [],
+        effectAllowed: 'all',
+        setData: vi.fn(),
+        setDragImage,
+      },
+      stopPropagation: vi.fn(),
+    } as unknown as DragEvent;
+
+    directive.onDragStart(event);
+
+    expect(setDragImage).toHaveBeenCalledOnce();
+    expect(setDragImage.mock.calls[0][0]).toBe(secondDragImage.nativeElement);
+
+    directive.onDragEnd(event);
   });
 });
