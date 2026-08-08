@@ -1,4 +1,4 @@
-import { Component, DebugElement } from '@angular/core';
+import { Component, DebugElement, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -42,12 +42,20 @@ class HandleDraggableHost {}
   imports: [DndDraggableDirective, DndDragImageRefDirective],
   template: `
     <div [dndDraggable]="'data'">
-      <div dndDragImageRef>custom image</div>
+      @if (showDragImage()) {
+        <div dndDragImageRef>custom image</div>
+      }
+      @if (showSecondDragImage()) {
+        <div dndDragImageRef>second custom image</div>
+      }
       content
     </div>
   `,
 })
-class DragImageHost {}
+class DragImageHost {
+  showDragImage = signal(true);
+  showSecondDragImage = signal(false);
+}
 
 describe('DndDraggableDirective', () => {
   let fixture: ComponentFixture<BasicDraggableHost>;
@@ -163,5 +171,41 @@ describe('DndDraggableDirective - drag image', () => {
     );
     const directive = draggableEl.injector.get(DndDraggableDirective);
     expect((directive as any).dndDragImageElementRef).toBeTruthy();
+  });
+
+  it('should unregister the drag image element when it is destroyed', () => {
+    const draggableEl = fixture.debugElement.query(
+      By.directive(DndDraggableDirective)
+    );
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+
+    fixture.componentInstance.showDragImage.set(false);
+    fixture.detectChanges();
+
+    expect(
+      fixture.debugElement.query(By.directive(DndDragImageRefDirective))
+    ).toBeNull();
+    expect((directive as any).dndDragImageElementRef).toBeUndefined();
+  });
+
+  it('should keep a newer drag image registered when an older one is destroyed', () => {
+    const draggableEl = fixture.debugElement.query(
+      By.directive(DndDraggableDirective)
+    );
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+
+    fixture.componentInstance.showSecondDragImage.set(true);
+    fixture.detectChanges();
+    const dragImages = fixture.debugElement.queryAll(
+      By.directive(DndDragImageRefDirective)
+    );
+    const secondDragImage = dragImages[1].injector.get(
+      DndDragImageRefDirective
+    ).elementRef;
+
+    fixture.componentInstance.showDragImage.set(false);
+    fixture.detectChanges();
+
+    expect((directive as any).dndDragImageElementRef).toBe(secondDragImage);
   });
 });
