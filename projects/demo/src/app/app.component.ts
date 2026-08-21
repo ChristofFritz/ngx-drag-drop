@@ -15,6 +15,7 @@ const TABS: string[] = [
 ];
 
 const ISSUE_DEMOS: { issue: number; label: string }[] = [
+  { issue: 157, label: 'Dragging source visibility (#157)' },
   { issue: 195, label: '#195 — dropEffect ignores dropzone effectAllowed' },
 ];
 

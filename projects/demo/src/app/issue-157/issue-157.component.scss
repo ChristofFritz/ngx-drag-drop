@@ -1,0 +1,68 @@
+:host {
+  display: block;
+}
+
+.mode {
+  background: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text-emphasis);
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &.fixed {
+    background: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
+  }
+}
+
+.tile-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 256px;
+}
+
+.tile,
+.placeholder {
+  align-items: center;
+  box-sizing: border-box;
+  display: grid;
+  height: 76px;
+}
+
+.tile {
+  cursor: grab;
+  gap: 0.5rem;
+  grid-template-columns: auto 1fr auto;
+  user-select: none;
+
+  mat-icon {
+    color: var(--bs-secondary-color);
+  }
+}
+
+.placeholder {
+  font-size: 0.75rem;
+  font-weight: 500;
+  place-items: center;
+  text-transform: uppercase;
+}
+
+.dndDraggingSource {
+  opacity: 0.4;
+}
+
+.result {
+  background: var(--bs-warning-bg-subtle);
+  color: var(--bs-warning-text-emphasis);
+
+  &.fixed {
+    background: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
+  }
+}
+
+@media (max-width: 700px) {
+  .tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

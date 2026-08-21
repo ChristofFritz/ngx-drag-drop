@@ -46,6 +46,7 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
   @Input() dndType?: string;
   @Input() dndDraggingClass = 'dndDragging';
   @Input() dndDraggingSourceClass = 'dndDraggingSource';
+  @Input() dndHideDraggingSource = false;
   @Input() dndDraggableDisabledClass = 'dndDraggableDisabled';
   @Input() dndDragImageOffsetFunction: DndDragImageOffsetFunction =
     calculateDragImageOffset;
@@ -71,6 +72,8 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
   private dndDragImageElementRef?: ElementRef;
   private dragImage: Element | undefined;
   private isDragStarted: boolean = false;
+  private sourceDisplay: string | null = null;
+  private unregisterSourceDragListener?: () => void;
 
   private elementRef: ElementRef<HTMLElement> = inject(ElementRef);
   private renderer = inject(Renderer2);
@@ -110,9 +113,11 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
       'drag',
       this.dragEventHandler
     );
+    this.removeSourceDragListener();
     if (this.isDragStarted) {
       endDrag();
     }
+    this.restoreSourceDisplay();
   }
 
   @HostListener('dragstart', ['$event']) onDragStart(event: DndEvent): boolean {
@@ -156,7 +161,8 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
     }
 
     // add dragging source css class on first drag event
-    const unregister = this.renderer.listen(
+    this.removeSourceDragListener();
+    this.unregisterSourceDragListener = this.renderer.listen(
       this.elementRef.nativeElement,
       'drag',
       () => {
@@ -164,7 +170,8 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
           this.elementRef.nativeElement,
           this.dndDraggingSourceClass
         );
-        unregister();
+        this.hideSource();
+        this.removeSourceDragListener();
       }
     );
 
@@ -186,6 +193,8 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
   }
 
   @HostListener('dragend', ['$event']) onDragEnd(event: DragEvent) {
+    this.removeSourceDragListener();
+
     if (!this.isDragStarted) {
       return;
     }
@@ -221,6 +230,8 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
     endDrag();
 
     this.isDragStarted = false;
+
+    this.restoreSourceDisplay();
 
     this.renderer.removeClass(this.dragImage, this.dndDraggingClass);
 
@@ -260,5 +271,34 @@ export class DndDraggableDirective implements AfterViewInit, OnDestroy {
     } else {
       return this.elementRef.nativeElement;
     }
+  }
+
+  private hideSource(): void {
+    if (!this.dndHideDraggingSource || this.sourceDisplay !== null) {
+      return;
+    }
+
+    const source = this.elementRef.nativeElement;
+    this.sourceDisplay = source.style.display;
+    this.renderer.setStyle(source, 'display', 'none');
+  }
+
+  private restoreSourceDisplay(): void {
+    if (this.sourceDisplay === null) {
+      return;
+    }
+
+    const source = this.elementRef.nativeElement;
+    if (this.sourceDisplay === '') {
+      this.renderer.removeStyle(source, 'display');
+    } else {
+      this.renderer.setStyle(source, 'display', this.sourceDisplay);
+    }
+    this.sourceDisplay = null;
+  }
+
+  private removeSourceDragListener(): void {
+    this.unregisterSourceDragListener?.();
+    this.unregisterSourceDragListener = undefined;
   }
 }

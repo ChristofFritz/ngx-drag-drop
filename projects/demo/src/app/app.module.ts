@@ -51,6 +51,10 @@ const routes: Routes = [
     loadComponent: () => import('./shadow-dom/shadow-dom.component'),
   },
   {
+    path: 'issue/157',
+    loadComponent: () => import('./issue-157/issue-157.component'),
+  },
+  {
     path: 'issue/195',
     loadComponent: () => import('./issue-195/issue-195.component'),
   },

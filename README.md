@@ -59,6 +59,7 @@ For older Angular versions (v4–v12), use ngx-drag-drop v2.x.
 <div [dndDraggable]="draggable.data"
      [dndEffectAllowed]="draggable.effectAllowed"
      [dndDisableIf]="draggable.disable"
+     [dndHideDraggingSource]="true"
      (dndStart)="onDragStart($event)"
      (dndCopied)="onDraggableCopied($event)"
      (dndLinked)="onDraggableLinked($event)"
@@ -95,6 +96,12 @@ For older Angular versions (v4–v12), use ngx-drag-drop v2.x.
 
 </section>
 ```
+
+Set `[dndHideDraggingSource]="true"` when the original element should not remain
+in the layout while its drag image follows the pointer. This is useful for
+sortable lists, grids, and nested layouts. The source is hidden only after the
+browser captures the drag image, and its original inline `display` value is
+restored when dragging ends.
 
 `app.component`
 
@@ -218,6 +225,9 @@ export declare class DndDraggableDirective {
 
     // set a custom class that is applied to only the src element while dragging
     dndDraggingSourceClass: string = "dndDraggingSource";
+
+    // remove the source element from layout after the browser captures the drag image
+    dndHideDraggingSource: boolean = false;
 
     // set the class that is applied when draggable is disabled by [dndDisableIf]
     dndDraggableDisabledClass = "dndDraggableDisabled";
