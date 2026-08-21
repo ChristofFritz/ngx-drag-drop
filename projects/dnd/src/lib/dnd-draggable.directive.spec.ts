@@ -136,6 +136,83 @@ describe('DndDraggableDirective', () => {
     vi.useRealTimers();
   });
 
+  it('should hide the source after capturing the drag image and restore its display', () => {
+    vi.useFakeTimers();
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const source = draggableEl.nativeElement as HTMLElement;
+    directive.dndHideDraggingSource = true;
+    source.style.display = 'inline-grid';
+    const event = createMockDragEvent();
+
+    directive.onDragStart(event);
+    expect(source.style.display).toBe('inline-grid');
+
+    source.dispatchEvent(new Event('drag'));
+    expect(source.style.display).toBe('none');
+
+    directive.onDragEnd(event);
+    expect(source.style.display).toBe('inline-grid');
+    vi.runAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should keep the source visible by default after a drag event', () => {
+    vi.useFakeTimers();
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const source = draggableEl.nativeElement as HTMLElement;
+    source.style.display = 'inline-grid';
+    const event = createMockDragEvent();
+
+    directive.onDragStart(event);
+    source.dispatchEvent(new Event('drag'));
+
+    expect(source.style.display).toBe('inline-grid');
+    directive.onDragEnd(event);
+    vi.runAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should remove a pending source listener when a drag ends before its first drag event', () => {
+    vi.useFakeTimers();
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const source = draggableEl.nativeElement as HTMLElement;
+    directive.dndHideDraggingSource = true;
+    source.style.display = 'inline-grid';
+    const firstEvent = createMockDragEvent();
+    const secondEvent = createMockDragEvent();
+
+    directive.onDragStart(firstEvent);
+    directive.onDragEnd(firstEvent);
+    expect(source.style.display).toBe('inline-grid');
+
+    directive.onDragStart(secondEvent);
+    source.dispatchEvent(new Event('drag'));
+    expect(source.style.display).toBe('none');
+
+    directive.onDragEnd(secondEvent);
+    expect(source.style.display).toBe('inline-grid');
+    vi.runAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should restore a hidden source when destroyed during a drag', () => {
+    vi.useFakeTimers();
+    const directive = draggableEl.injector.get(DndDraggableDirective);
+    const source = draggableEl.nativeElement as HTMLElement;
+    directive.dndHideDraggingSource = true;
+    const event = createMockDragEvent();
+
+    directive.onDragStart(event);
+    source.dispatchEvent(new Event('drag'));
+    expect(source.style.display).toBe('none');
+
+    fixture.destroy();
+    expect(source.style.display).toBe('');
+    expect(dndState.isDragging).toBe(false);
+    vi.runAllTimers();
+    vi.useRealTimers();
+  });
+
   it('should clean up drag state when drag data cannot be serialized', () => {
     const directive = draggableEl.injector.get(DndDraggableDirective);
     const startSpy = vi.spyOn(directive.dndStart, 'emit');

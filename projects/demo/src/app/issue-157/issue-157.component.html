@@ -1,0 +1,78 @@
+<div class="container-fluid">
+  <mat-card appearance="raised">
+    <mat-card-header>
+      <mat-card-title>Dragging source visibility</mat-card-title>
+      <mat-card-subtitle>
+        Drag a tile across the grid and compare the original behavior with the
+        proposed <code>dndHideDraggingSource</code> option. This also applies to
+        nested dropzones and other layouts. Originally reported as issue #157.
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content class="pt-3">
+      <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+        <mat-slide-toggle
+          [checked]="hideDraggingSource()"
+          [disabled]="dragging()"
+          (change)="hideDraggingSource.set($event.checked)">
+          Hide the dragging source
+        </mat-slide-toggle>
+
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="dragging()"
+          (click)="reset()">
+          <mat-icon fontIcon="restart_alt"></mat-icon>
+          Reset tiles
+        </button>
+
+        <span
+          class="mode px-2 py-1 rounded-1"
+          [class.fixed]="hideDraggingSource()">
+          {{ hideDraggingSource() ? 'Source hidden' : 'Source visible' }}
+        </span>
+      </div>
+
+      <p class="text-body-secondary mb-2">{{ status() }}</p>
+
+      <div
+        class="tile-grid bg-light rounded-1 shadow-sm p-2"
+        dndDropzone
+        dndEffectAllowed="move"
+        (dndDrop)="onDrop($event)">
+        @for (tile of tiles(); track tile.id) {
+          <div
+            class="tile border rounded-1 bg-white px-3"
+            [dndDraggable]="tile"
+            dndEffectAllowed="move"
+            [dndHideDraggingSource]="hideDraggingSource()"
+            (dndStart)="onDragStart(tile)"
+            (dndEnd)="onDragEnd()">
+            <mat-icon fontIcon="drag_handle"></mat-icon>
+            <span>{{ tile.label }}</span>
+            <small class="text-body-secondary">#{{ tile.id }}</small>
+          </div>
+        }
+
+        <div
+          class="placeholder border border-primary border-2 rounded-1 bg-primary-subtle"
+          dndPlaceholderRef>
+          placeholder
+        </div>
+      </div>
+
+      <div
+        class="result mt-3 p-3 border rounded-1"
+        [class.fixed]="hideDraggingSource()">
+        @if (hideDraggingSource()) {
+          <strong>Expected:</strong> ten source tiles plus one placeholder
+          occupy the eleven grid positions, so no extra row is created.
+        } @else {
+          <strong>Issue reproduced:</strong> eleven source tiles plus the
+          placeholder occupy twelve positions, causing temporary reflow.
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
